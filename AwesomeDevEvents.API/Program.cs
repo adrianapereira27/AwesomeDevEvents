@@ -1,9 +1,10 @@
 using AwesomeDevEvents.API.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<DevEventsDbContext>(); // guarda em memória o contexto (simulando um banco de dados em memória)
+builder.Services.AddDbContext<DevEventsDbContext>(o => o.UseInMemoryDatabase("DevEventsDb")); // guarda em um banco de dados em memória
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

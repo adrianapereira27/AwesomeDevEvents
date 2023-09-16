@@ -1,8 +1,7 @@
 ﻿using AwesomeDevEvents.API.Entities;
 using AwesomeDevEvents.API.Persistence;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.EntityFrameworkCore;
 
 namespace AwesomeDevEvents.API.Controllers
 {
@@ -29,7 +28,9 @@ namespace AwesomeDevEvents.API.Controllers
         [HttpGet("{id}")]
         public IActionResult GetById(Guid id)
         {
-            var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == id); // retorna todos os dados de um id
+            var devEvent = _context.DevEvents
+                .Include(de => de.Speakers) // inclusão dos speakers
+                .SingleOrDefault(d => d.Id == id); // retorna todos os dados de um id
 
             if (devEvent == null)
             {
@@ -40,12 +41,13 @@ namespace AwesomeDevEvents.API.Controllers
         }
         // rota = api/dev-events/   POST 
         [HttpPost]
-        public IActionResult Post(DevEvent devEvent) 
+        public IActionResult Post(DevEvent devEvent)
         {
             _context.DevEvents.Add(devEvent); // adiciona o objeto no contexto (em memória)
+            _context.SaveChanges();   //salva os dados no banco 
 
             return CreatedAtAction(nameof(GetById), new { id = devEvent.Id }, devEvent); // return status 201
-                                // api que vai recuperar o objeto, parâmetro, objeto
+                                                                                         // api que vai recuperar o objeto, parâmetro, objeto
         }
         // rota = api/dev-events/245454514   PUT 
         [HttpPut("{id}")]
@@ -58,7 +60,9 @@ namespace AwesomeDevEvents.API.Controllers
                 return NotFound(); // se não encontrar o registro retorna status 404 
             }
 
-            devEvent.Update(input.Title, input.Description, input.StartDate, input.EndDate); // atualiza os dados
+            devEvent.Update(input.Title, input.Description, input.StartDate, input.EndDate); // move os dados para a entidade DevEvents
+            _context.DevEvents.Update(devEvent);  // Este update é metodo do DbSet
+            _context.SaveChanges();  // salva no banco de dados
 
             return NoContent(); // retorna status 204 (sucesso)
         }
@@ -75,22 +79,27 @@ namespace AwesomeDevEvents.API.Controllers
 
             devEvent.Delete(); // deleta o registro
 
+            _context.SaveChanges();  // salva no banco de dados
+
             return NoContent(); // retorna status 204 (sucesso)
         }
         // rota = api/dev-events/245454514/speakers    POST
         [HttpPost("{id}/speakers")]
         public IActionResult PostSpeaker(Guid id, DevEventSpeaker speaker)
         {
-            var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == id); // retorna todos os dados de um id
+            speaker.DevEventId = id;  // pegar o id do DevEvent e mover para o Speaker (chave estrangeira)
 
-            if (devEvent == null)
+            var devEvent = _context.DevEvents.Any(d => d.Id == id); // verifica se existe o DevEvents
+
+            if (!devEvent)
             {
                 return NotFound(); // se não encontrar o registro retorna status 404 
             }
 
-            devEvent.Speakers.Add(speaker); // adiciona o speaker na lista
+            _context.DevEventSpeakers.Add(speaker); // adiciona a entidade speaker na tabela DevEventSpeakers
+            _context.SaveChanges();  // salva no banco de dados
 
-            return NoContent(); // retorna status 204 (sucesso)
+            return NoContent();  // retorna status 204 (sucesso)
         }
     }
 }
