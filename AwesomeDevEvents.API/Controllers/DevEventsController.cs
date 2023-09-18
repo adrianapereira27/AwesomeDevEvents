@@ -37,7 +37,7 @@ namespace AwesomeDevEvents.API.Controllers
                 return NotFound(); // se não encontrar o registro retorna status 404 
             }
 
-            return Ok(); // se encontrar retorna status 200 (sucesso)
+            return Ok(devEvent); // se encontrar retorna status 200 (sucesso)
         }
         // rota = api/dev-events/   POST 
         [HttpPost]
